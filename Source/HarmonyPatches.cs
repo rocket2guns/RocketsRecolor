@@ -35,9 +35,29 @@ namespace RecolorClothing
     }
 
     /// <summary>
-    /// Draw color picker in the bill config dialog.
-    /// Positioned at bottom-left, following CraftWithColor's pattern of
-    /// offsetting from inRect.yMax.
+    /// Capture the Bill_Production instance before it calls
+    /// recipe.Worker.Notify_IterationCompleted, so our RecipeWorker
+    /// can reliably access the bill even when other mods (like CraftWithColor)
+    /// wrap the finish toil and alter the job state.
+    /// </summary>
+    [HarmonyPatch(typeof(Bill_Production), nameof(Bill_Production.Notify_IterationCompleted))]
+    public static class Patch_BillProduction_NotifyIteration
+    {
+        public static void Prefix(Bill_Production __instance)
+        {
+            RecipeWorker_Recolor.CurrentBill = __instance;
+        }
+
+        public static void Postfix()
+        {
+            RecipeWorker_Recolor.CurrentBill = null;
+        }
+    }
+
+    /// <summary>
+    /// Draw compact color indicator in the bill config dialog.
+    /// Just shows "Target Color" label + clickable swatch. 
+    /// Clicking opens the full color picker dialog.
     /// </summary>
     [HarmonyPatch(typeof(Dialog_BillConfig), nameof(Dialog_BillConfig.DoWindowContents))]
     public static class Patch_BillConfig_UI
@@ -45,89 +65,47 @@ namespace RecolorClothing
         private static readonly FieldInfo billField =
             AccessTools.Field(typeof(Dialog_BillConfig), "bill");
 
+        private const float SwatchSize = 28f;
+        private const float RowHeight = 32f;
+        private const float BottomOffset = 62f;
+
         public static void Postfix(Dialog_BillConfig __instance, Rect inRect)
         {
             Bill bill = billField.GetValue(__instance) as Bill;
             if (!(bill is RecolorBill recolorBill))
                 return;
 
-            DrawColorPicker(inRect, recolorBill);
-        }
-
-        private const float SwatchSize = 28f;
-        private const float SliderHeight = 22f;
-        private const float Padding = 8f;
-        private const float Gap = 4f;
-        private const float LabelHeight = 24f;
-
-        // Total height: label + swatch row + hex + 3 sliders
-        private const float ContentHeight = LabelHeight + SwatchSize + Gap + 18f + Gap
-                                          + (SliderHeight + Gap) * 3f;
-        // Offset from bottom: close button height + some margin
-        private const float BottomOffset = 62f;
-
-        private static void DrawColorPicker(Rect inRect, RecolorBill bill)
-        {
-            // Position: left third of dialog, above close button
-            // CraftWithColor uses Mathf.Floor((inRect.width - 34f) / 3f) for column width
             float columnWidth = Mathf.Floor((inRect.width - 34f) / 3f);
-            float panelWidth = Mathf.Min(columnWidth, 210f);
+            float panelWidth = Mathf.Min(columnWidth, 220f);
+            float y = inRect.yMax - BottomOffset - RowHeight;
+            float x = inRect.x;
 
-            float panelTop = inRect.yMax - BottomOffset - ContentHeight;
-            Rect panel = new Rect(inRect.x, panelTop, panelWidth, ContentHeight);
-
-            // Background
-            Widgets.DrawBoxSolid(panel, new Color(0.12f, 0.12f, 0.12f, 0.85f));
-            Color oldColor = GUI.color;
-            GUI.color = new Color(0.4f, 0.4f, 0.4f);
-            Widgets.DrawBox(panel);
-            GUI.color = oldColor;
-
-            float x = panel.x + Padding;
-            float y = panel.y + Padding;
-            float innerWidth = panel.width - Padding * 2f;
-
-            // Label + swatch on same row
+            // Label
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(x, y, innerWidth - SwatchSize - Gap, LabelHeight), "Target Color");
+            Rect labelRect = new Rect(x, y + 4f, panelWidth - SwatchSize - 8f, RowHeight);
+            Widgets.Label(labelRect, "Target Color");
 
-            // Color swatch — click to open full picker dialog
-            Rect swatchRect = new Rect(x + innerWidth - SwatchSize, y, SwatchSize, SwatchSize);
-            Widgets.DrawBoxSolid(swatchRect, bill.chosenColor);
+            // Clickable swatch
+            Rect swatchRect = new Rect(x + panelWidth - SwatchSize, y + 2f, SwatchSize, SwatchSize);
+            Widgets.DrawBoxSolid(swatchRect, recolorBill.chosenColor);
+            Color oldGui = GUI.color;
             GUI.color = new Color(0.5f, 0.5f, 0.5f);
             Widgets.DrawBox(swatchRect);
-            GUI.color = oldColor;
+            GUI.color = oldGui;
+
             if (Widgets.ButtonInvisible(swatchRect))
             {
-                Find.WindowStack.Add(new Dialog_ChooseRecolorColor(bill));
+                Find.WindowStack.Add(new Dialog_ChooseRecolorColor(recolorBill));
             }
-            y += Mathf.Max(LabelHeight, SwatchSize) + Gap;
 
-            // Hex display
+            // Hex next to label for quick reference
             Text.Font = GameFont.Tiny;
-            string hexStr = "#" + ColorUtility.ToHtmlStringRGB(bill.chosenColor);
-            Widgets.Label(new Rect(x, y, innerWidth, 18f), hexStr);
-            y += 18f + Gap;
-
-            // RGB sliders
-            Color c = bill.chosenColor;
-
-            c.r = Widgets.HorizontalSlider(
-                new Rect(x, y, innerWidth, SliderHeight),
-                c.r, 0f, 1f, false, $"R: {(int)(c.r * 255)}");
-            y += SliderHeight + Gap;
-
-            c.g = Widgets.HorizontalSlider(
-                new Rect(x, y, innerWidth, SliderHeight),
-                c.g, 0f, 1f, false, $"G: {(int)(c.g * 255)}");
-            y += SliderHeight + Gap;
-
-            c.b = Widgets.HorizontalSlider(
-                new Rect(x, y, innerWidth, SliderHeight),
-                c.b, 0f, 1f, false, $"B: {(int)(c.b * 255)}");
-
+            string hex = "#" + ColorUtility.ToHtmlStringRGB(recolorBill.chosenColor);
+            Rect hexRect = new Rect(x, y + RowHeight - 2f, panelWidth - SwatchSize - 8f, 16f);
+            GUI.color = new Color(0.6f, 0.6f, 0.6f);
+            Widgets.Label(hexRect, hex);
+            GUI.color = Color.white;
             Text.Font = GameFont.Small;
-            bill.chosenColor = c;
         }
     }
 }

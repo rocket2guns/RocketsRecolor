@@ -6,7 +6,7 @@
 	<li>1.6</li>
   </supportedVersions>
   <packageId>Rockets.recolor</packageId>
-  <description>Recolor.</description>
+   <description>Adds a recoloring work order to crafting spots and tailoring benches. Pawns will haul existing clothing and dye to the bench, then recolor the clothing to your chosen color. Compatible with Craft With Color. If installed, the recolor dialog shares CWC's saved color palette.</description>
   <modDependencies>
     <li>
       <packageId>brrainz.harmony</packageId>
@@ -15,4 +15,7 @@
       <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
     </li>
   </modDependencies>
+  <loadAfter>
+    <li>kathanon.craftwithcolor</li>
+  </loadAfter>
 </ModMetaData>

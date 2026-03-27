@@ -4,41 +4,57 @@ using Verse;
 
 namespace RecolorClothing
 {
-    /// <summary>
-    /// Custom RecipeWorker for the recolor recipe.
-    /// 
-    /// Both apparel and dye are listed as ingredients. The vanilla job system
-    /// handles hauling both to the bench and reserving them properly.
-    /// 
-    /// ConsumeIngredient: lets dye be destroyed normally, but prevents
-    ///   apparel destruction so it survives to be recolored.
-    /// 
-    /// Notify_IterationCompleted: applies the chosen color to the apparel.
-    ///   The apparel is already at the bench location from hauling, so it
-    ///   gets picked up by normal hauling jobs afterward.
-    /// </summary>
     public class RecipeWorker_Recolor : RecipeWorker
     {
+        internal static Bill_Production CurrentBill;
+
         public override void ConsumeIngredient(Thing ingredient, RecipeDef recipe, Map map)
         {
-            // Dye gets consumed normally
             if (ingredient.def == ThingDefOf.Dye)
             {
                 ingredient.Destroy();
                 return;
             }
-
-            // Apparel survives — don't destroy it
+            // Apparel survives
         }
 
         public override void Notify_IterationCompleted(Pawn billDoer, List<Thing> ingredients)
         {
-            Bill bill = billDoer?.CurJob?.bill;
-            RecolorBill recolorBill = bill as RecolorBill;
+            // Try multiple sources for the bill
+            RecolorBill recolorBill = CurrentBill as RecolorBill;
 
             if (recolorBill == null)
             {
-                Log.Error("[RecolorClothing] Could not find RecolorBill on pawn's current job.");
+                recolorBill = billDoer?.CurJob?.bill as RecolorBill;
+            }
+
+            // Walk the bill stack to find our bill if the above failed
+            if (recolorBill == null && billDoer?.CurJob?.bill != null)
+            {
+                Bill jobBill = billDoer.CurJob.bill;
+                Log.Warning($"[RecolorClothing] Debug: CurrentBill type = {CurrentBill?.GetType()?.Name ?? "null"}, " +
+                            $"CurJob.bill type = {jobBill?.GetType()?.Name ?? "null"}, " +
+                            $"recipe = {jobBill?.recipe?.defName ?? "null"}");
+
+                // CraftWithColor may have wrapped our bill or swapped the recipe.
+                // Check if the job's bill is actually our RecolorBill under the hood,
+                // or find it in the bill stack.
+                if (jobBill?.billStack != null)
+                {
+                    foreach (Bill b in jobBill.billStack)
+                    {
+                        if (b is RecolorBill rb)
+                        {
+                            recolorBill = rb;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (recolorBill == null)
+            {
+                Log.Error("[RecolorClothing] Could not find RecolorBill. Color not applied.");
                 return;
             }
 
@@ -47,7 +63,6 @@ namespace RecolorClothing
                 if (item == null || item.Destroyed)
                     continue;
 
-                // Skip dye (already destroyed in ConsumeIngredient)
                 if (item.def == ThingDefOf.Dye)
                     continue;
 
