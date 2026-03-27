@@ -1,64 +1,29 @@
 using System.Collections.Generic;
 using RimWorld;
+using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RecolorClothing
 {
     public class RecipeWorker_Recolor : RecipeWorker
     {
-        internal static Bill_Production CurrentBill;
-
         public override void ConsumeIngredient(Thing ingredient, RecipeDef recipe, Map map)
         {
-            if (ingredient.def == ThingDefOf.Dye)
-            {
-                ingredient.Destroy();
-                return;
-            }
-            // Apparel survives
+            if (ingredient.def != ThingDefOf.Dye) return;
+            ingredient.Destroy();
         }
 
         public override void Notify_IterationCompleted(Pawn billDoer, List<Thing> ingredients)
         {
-            // Try multiple sources for the bill
-            RecolorBill recolorBill = CurrentBill as RecolorBill;
-
-            if (recolorBill == null)
-            {
-                recolorBill = billDoer?.CurJob?.bill as RecolorBill;
-            }
-
-            // Walk the bill stack to find our bill if the above failed
-            if (recolorBill == null && billDoer?.CurJob?.bill != null)
-            {
-                Bill jobBill = billDoer.CurJob.bill;
-                Log.Warning($"[RecolorClothing] Debug: CurrentBill type = {CurrentBill?.GetType()?.Name ?? "null"}, " +
-                            $"CurJob.bill type = {jobBill?.GetType()?.Name ?? "null"}, " +
-                            $"recipe = {jobBill?.recipe?.defName ?? "null"}");
-
-                // CraftWithColor may have wrapped our bill or swapped the recipe.
-                // Check if the job's bill is actually our RecolorBill under the hood,
-                // or find it in the bill stack.
-                if (jobBill?.billStack != null)
-                {
-                    foreach (Bill b in jobBill.billStack)
-                    {
-                        if (b is RecolorBill rb)
-                        {
-                            recolorBill = rb;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (recolorBill == null)
+            var recolorBill = FindRecolorBill(billDoer);
+            if (recolorBill is null)
             {
                 Log.Error("[RecolorClothing] Could not find RecolorBill. Color not applied.");
                 return;
             }
-
-            foreach (Thing item in ingredients)
+            var color = recolorBill.GetColorForIteration();
+            foreach (var item in ingredients)
             {
                 if (item == null || item.Destroyed)
                     continue;
@@ -66,16 +31,48 @@ namespace RecolorClothing
                 if (item.def == ThingDefOf.Dye)
                     continue;
 
-                CompColorable comp = item.TryGetComp<CompColorable>();
+                var comp = item.TryGetComp<CompColorable>();
                 if (comp != null)
                 {
-                    comp.SetColor(recolorBill.chosenColor);
+                    comp.SetColor(color);
                 }
                 else
                 {
-                    Log.Warning($"[RecolorClothing] {item.def.defName} has no CompColorable. Cannot apply color.");
+                    Log.Warning($"[RecolorClothing] {item.def.defName} has no CompColorable.");
                 }
             }
+        }
+
+        private static RecolorBill FindRecolorBill(Pawn billDoer)
+        {
+            var job = billDoer?.CurJob;
+            if (job is null)
+                return null;
+
+            var jobBill = job.bill;
+            if (jobBill is RecolorBill rb)
+                return rb;
+
+            // Check the bill stack on job.bill
+            if (jobBill?.billStack != null)
+            {
+                foreach (var b in jobBill.billStack)
+                {
+                    if (b is RecolorBill candidate)
+                        return candidate;
+                }
+            }
+
+            var workbench = job.GetTarget(TargetIndex.A).Thing;
+            if (workbench is IBillGiver { BillStack: not null } giver)
+            {
+                foreach (var b in giver.BillStack)
+                {
+                    if (b is RecolorBill candidate)
+                        return candidate;
+                }
+            }
+            return null;
         }
     }
 }

@@ -4,15 +4,10 @@ using Verse;
 
 namespace RecolorClothing
 {
-    /// <summary>
-    /// Extends Bill_Production to store the chosen recolor color.
-    /// 
-    /// Overrides IsFixedOrAllowedIngredient to reject apparel
-    /// that is already the target color.
-    /// </summary>
     public class RecolorBill : Bill_Production
     {
         public Color chosenColor = Color.white;
+        public bool isRandomColor = false;
 
         public RecolorBill() { }
 
@@ -20,13 +15,25 @@ namespace RecolorClothing
         {
         }
 
+        /// <summary>
+        /// Get the color for this iteration. If random, roll a new one each time.
+        /// </summary>
+        public Color GetColorForIteration()
+        {
+            if (isRandomColor)
+            {
+                chosenColor = Random.ColorHSV(0f, 1f, 0.3f, 1f, 0.3f, 1f);
+            }
+            return chosenColor;
+        }
+
         public override bool IsFixedOrAllowedIngredient(Thing thing)
         {
             if (!base.IsFixedOrAllowedIngredient(thing))
                 return false;
 
-            // Don't filter dye — only filter apparel
-            if (thing is Apparel)
+            // Don't filter apparel when random — any color is fine to recolor
+            if (thing is Apparel && !isRandomColor)
             {
                 CompColorable comp = thing.TryGetComp<CompColorable>();
                 if (comp != null && comp.Active && comp.Color.IndistinguishableFrom(chosenColor))
@@ -42,12 +49,14 @@ namespace RecolorClothing
         {
             base.ExposeData();
             Scribe_Values.Look(ref chosenColor, "chosenColor", Color.white);
+            Scribe_Values.Look(ref isRandomColor, "isRandomColor", false);
         }
 
         public override Bill Clone()
         {
             var clone = (RecolorBill)base.Clone();
             clone.chosenColor = chosenColor;
+            clone.isRandomColor = isRandomColor;
             return clone;
         }
     }
