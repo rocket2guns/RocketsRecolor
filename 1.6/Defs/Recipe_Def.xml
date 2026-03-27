@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+	<RecipeDef>
+		<defName>RecolorClothing</defName>
+		<label>recolor clothing</label>
+		<description>Recolor an existing piece of clothing using dye. Select the clothing to recolor using the ingredient filter, then choose a target color.</description>
+		<jobString>Recoloring clothing.</jobString>
+		<workAmount>600</workAmount>
+		<workSpeedStat>GeneralLaborSpeed</workSpeedStat>
+		<effectWorking>Clean</effectWorking>
+		<soundWorking>Recipe_Machining</soundWorking>
+		<workSkill>Crafting</workSkill>
+		<workSkillLearnFactor>0.25</workSkillLearnFactor>
+		<workerClass>RecolorClothing.RecipeWorker_Recolor</workerClass>
+
+		<ingredients>
+			<!-- The apparel being recolored -->
+			<li>
+				<filter>
+					<categories>
+						<li>Apparel</li>
+					</categories>
+				</filter>
+				<count>1</count>
+			</li>
+			<!-- Dye cost -->
+			<li>
+				<filter>
+					<thingDefs>
+						<li>Dye</li>
+					</thingDefs>
+				</filter>
+				<count>1</count>
+			</li>
+		</ingredients>
+
+		<fixedIngredientFilter>
+			<categories>
+				<li>Apparel</li>
+			</categories>
+			<thingDefs>
+				<li>Dye</li>
+			</thingDefs>
+		</fixedIngredientFilter>
+
+		<defaultIngredientFilter>
+			<categories>
+				<li>Apparel</li>
+			</categories>
+			<thingDefs>
+				<li>Dye</li>
+			</thingDefs>
+		</defaultIngredientFilter>
+
+		<products/>
+		<specialProducts>
+			<li>Butchery</li>
+		</specialProducts>
+
+		<recipeUsers>
+			<li>CraftingSpot</li>
+			<li>ElectricTailoringBench</li>
+			<li>HandTailoringBench</li>
+		</recipeUsers>
+	</RecipeDef>
+
+</Defs>
