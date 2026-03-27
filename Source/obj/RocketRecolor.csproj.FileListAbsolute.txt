@@ -1,9 +1,0 @@
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Assemblies\RocketRecolor.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Assemblies\RocketRecolor.pdb
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.csproj.AssemblyReference.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.GeneratedMSBuildEditorConfig.editorconfig
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.AssemblyInfoInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.AssemblyInfo.cs
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.csproj.CoreCompileInputs.cache
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.dll
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RocketRecolor\Source\obj\RocketRecolor.pdb
